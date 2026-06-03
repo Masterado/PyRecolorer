@@ -102,13 +102,16 @@ class ColorCircle(QWidget):
             tcolorw="#ffffff"
         else:
             tcolorw="#000000"
-        self.app.label_3.setStyleSheet(f"background-color: {hcolorw}; color: {tcolorw};")
-        self.app.label_3.setText(f"{self.getColor().getRgb()}")
+        self.app.wheelLabel.setStyleSheet(f"background-color: {hcolorw}; color: {tcolorw};")
+        self.app.wheelLabel.setText(f"{self.getColor().getRgb()}")
         
         irgb=self.app.imgc.getRgb()
         crgb=self.getColor().getRgb()
+        
+        
+        #sets diff to the difference in rgb values between the color of the image and the color selected on the wheel.
         self.app.diff =( (irgb[0] - crgb[0]),(irgb[1] - crgb[1]),(irgb[2] - crgb[2]) )
-        self.app.label_4.setText(f"{self.app.diff}")
+        self.app.differenceLabel.setText(f"{self.app.diff}")
        
   
       
@@ -144,8 +147,8 @@ class ColorCircle(QWidget):
             tcolor="#ffffff"
         else:
             tcolor="#000000"
-        self.app.label_5.setText(f"{newc.getRgb()}")      
-        self.app.label_5.setStyleSheet(f"background-color: {self.app.Hcolor(newc)}; color: {tcolor};")
+        self.app.colorLabel.setText(f"{newc.getRgb()}")      
+        self.app.colorLabel.setStyleSheet(f"background-color: {self.app.Hcolor(newc)}; color: {tcolor};")
         
         print(hcolorw)
         
