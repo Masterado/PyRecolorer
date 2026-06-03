@@ -17,7 +17,7 @@ import sys
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QPushButton, QLabel,
     QLineEdit, QFrame, QCheckBox, QRadioButton, QComboBox,
-    QTextEdit, QButtonGroup, QListWidget, QGraphicsView, QGraphicsScene
+    QTextEdit, QButtonGroup, QListWidget, QGraphicsView, QGraphicsScene, QProgressBar
 )
 from PyQt5.QtCore import Qt, QByteArray, QPoint, QSize
 from PyQt5.QtGui import QFont, QIcon, QPixmap, QImage, QCursor, QColor
@@ -28,11 +28,11 @@ class App(QMainWindow):
     
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Untitled Project")
+        self.setWindowTitle("ColorChanger")
         #self.setGeometry(0, 0, 800, 600)
         
         geometry = app.desktop().availableGeometry()
-      #  geometry.setHeight(geometry.height() - (titleBarHeight*2))
+
         self.setGeometry(geometry)
         
         
@@ -40,6 +40,9 @@ class App(QMainWindow):
         # Central widget
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
+       
+       #the difference in rgb values between the color of the image and the color selected on the wheel. Modified in ColorCircle.py 112
+        self.diff=(0,0,0)
        
         # Create widgets
         self._create_widgets()
@@ -50,166 +53,246 @@ class App(QMainWindow):
     def _create_widgets(self):
         """Create and place all widgets"""
         
-        # button_1
+        #progress bar for transform 
+        self.progress = QProgressBar(self)
+        self.progress.setGeometry(700, 200, 400, 90)
         
-        
+        # buttons
         self.BImport = QPushButton("Import", self.central_widget)
         self.BImport.setGeometry(660, 40, 120, 36)
         self.BImport.setFont(QFont("Arial", 12))
         self.BImport.setStyleSheet("background-color: #3b82f6; color: #ffffff;")
         self.BImport.clicked.connect(self.Import)
         
-        # entry_1  
+        self.BTransform = QPushButton("Transform", self.central_widget)
+        self.BTransform.setGeometry(660, 100, 120, 36)
+        self.BTransform.setFont(QFont("Arial", 12))
+        self.BTransform.setStyleSheet("background-color: #3b82f6; color: #ffffff;")
+        self.BTransform.clicked.connect(self.imgGen)
+        
+        self.BSave = QPushButton("Save", self.central_widget)
+        self.BSave.setGeometry(400, 150, 120, 36)
+        self.BSave.setFont(QFont("Arial", 12))
+        self.BSave.setStyleSheet("background-color: #3b82f6; color: #ffffff;")
+        self.BSave.clicked.connect(self.imgSave)
+        
+        
+        # input  
         self.img_input = QLineEdit(self.central_widget)
         self.img_input.setGeometry(10, 40, 130, 40)
         self.img_input.setPlaceholderText("Enter text...")
         self.img_input.setFont(QFont("Arial", 12))
         
-        # textarea_1
-        self.label_1 = QLabel("Enter filename of Image and hit Import", self.central_widget)
-        self.label_1.setGeometry(200, 40, 400, 80)
-        self.label_1.setFont(QFont("Arial", 12))
-        self.label_1.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
-        self.label_1.setStyleSheet("background-color: #ffffff; color: #000000;")
-        self.label_1.setWordWrap(True)
+        # labels
+        self.promptLabel = QLabel("Enter filename of Image and hit Import", self.central_widget)
+        self.promptLabel.setGeometry(200, 40, 400, 80)
+        self.promptLabel.setFont(QFont("Arial", 12))
+        self.promptLabel.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        self.promptLabel.setStyleSheet("background-color: #ffffff; color: #000000;")
+        self.promptLabel.setWordWrap(True)
         
-        self.label_2 = QLabel("Show Sample", self.central_widget)
-        self.label_2.setGeometry(800, 500, 400, 80)
-        self.label_2.setFont(QFont("Arial", 12))
-        self.label_2.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
-        self.label_2.setStyleSheet("background-color: #ffffff; color: #000000;")
-        self.label_2.setWordWrap(True)
+        self.sampleLabel = QLabel("Show Sample", self.central_widget)
+        self.sampleLabel.setGeometry(800, 500, 400, 80)
+        self.sampleLabel.setFont(QFont("Arial", 12))
+        self.sampleLabel.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        self.sampleLabel.setStyleSheet("background-color: #ffffff; color: #000000;")
+        self.sampleLabel.setWordWrap(True)
         
-        self.label_3 = QLabel("Show Wheel", self.central_widget)
-        self.label_3.setGeometry(800, 1500, 400, 80)
-        self.label_3.setFont(QFont("Arial", 12))
-        self.label_3.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
-        self.label_3.setStyleSheet("background-color: #ffffff; color: #000000;")
-        self.label_3.setWordWrap(True)
+        self.wheelLabel = QLabel("Show Wheel", self.central_widget)
+        self.wheelLabel.setGeometry(800, 1500, 400, 80)
+        self.wheelLabel.setFont(QFont("Arial", 12))
+        self.wheelLabel.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        self.wheelLabel.setStyleSheet("background-color: #ffffff; color: #000000;")
+        self.wheelLabel.setWordWrap(True)
         
-        self.label_4 = QLabel("Show Difference", self.central_widget)
-        self.label_4.setGeometry(1500, 1500, 400, 80)
-        self.label_4.setFont(QFont("Arial", 12))
-        self.label_4.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
-        self.label_4.setStyleSheet("background-color: #ffffff; color: #000000;")
-        self.label_4.setWordWrap(True)
+        self.differenceLabel = QLabel("Show Difference", self.central_widget)
+        self.differenceLabel.setGeometry(1500, 1500, 400, 80)
+        self.differenceLabel.setFont(QFont("Arial", 12))
+        self.differenceLabel.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        self.differenceLabel.setStyleSheet("background-color: #ffffff; color: #000000;")
+        self.differenceLabel.setWordWrap(True)
         
-        self.label_5 = QLabel("Show Color", self.central_widget)
-        self.label_5.setGeometry(1500, 1100, 400, 80)
-        self.label_5.setFont(QFont("Arial", 12))
-        self.label_5.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
-        self.label_5.setStyleSheet("background-color: #ffffff; color: #000000;")
-        self.label_5.setWordWrap(True)       
+        self.colorLabel = QLabel("Show Color", self.central_widget)
+        self.colorLabel.setGeometry(1500, 1100, 400, 80)
+        self.colorLabel.setFont(QFont("Arial", 12))
+        self.colorLabel.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        self.colorLabel.setStyleSheet("background-color: #ffffff; color: #000000;")
+        self.colorLabel.setWordWrap(True)       
         
-       
-        
-    # ==========================================
-    # Event Handlers - Implement your logic here
-    # ==========================================
+        self.instructionsLabel = QLabel(f"""Step 1: Type filename of image in top left.
+        Step 2: Click Import. 
+        Step 3: Click on a pixel in the imported image to choose a sample color. 
+        Step 4: Click on a pixel in the color wheel to choose a wheel color.
+        Step 5: The label to the right of the wheel will show the target color after applying the calculations to get from the original sample color to the wheel color. 
+        Step 6: Click Transform. 
+        Step 7: Save transformed image to computer.
+        """, self.central_widget)
+        self.instructionsLabel.setGeometry(1200, 40, 1000, 400)
+        self.instructionsLabel.setFont(QFont("Arial", 12))
+        self.instructionsLabel.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        self.instructionsLabel.setStyleSheet("background-color: #ffffff; color: #000000;")
+        self.instructionsLabel.setWordWrap(True)    
+
+
+        #Cursor, ColorWheel textlabel, transformed image label
         self.C=QCursor()
-        self.diff=(0,0,0)
-        self.img = QLabel(self)
+        
+        self.imgLabel = QLabel(self)
         #(x,y,w,h)
-        self.img.setGeometry(200, 500, 400, 1200)
+        self.imgLabel.setGeometry(200, 500, 400, 1200)
         self.ccd=ColorCircleDialog(self, self.central_widget)
         self.ccd.setGeometry(800,800,self.ccd.width(),self.ccd.height())
         self.cc=self.ccd.wid
-      #  self.cc.x=800
-        #self.cc.y=800
-        
-        
+        self.imgLabel2=QLabel(self)
+        self.imgLabel2.setGeometry(2000, 500, 400, 1200)
    
-
+   
+   
+    #returns rgb values of a QColor as a string
     def Hcolor(self,imgc):
         rgb=imgc.getRgb()
         hr="{:02x}".format((rgb[0]))
         hg="{:02x}".format((rgb[1]))
         hb="{:02x}".format((rgb[2]))
         return "#"+''.join([hr,hg,hb])
+
+
+#    def BB(self,pos,x,y,w,h):
+ #       if(pos.x()>=x and pos.x()<=w and pos.y()>=y and pos.y()<=h):
+  #          return True
+#        return False
+ 
+ 
+ 
+    #saves img to computer after clicking save button
+    def imgSave(self):
         
-    def BB(self,pos,x,y,w,h):
-        if(pos.x()>=x and pos.x()<=w and pos.y()>=y and pos.y()<=h):
-            return True
-        return False
+        s2="!"+self.img_input.text()
+        self.img2.save(s2)
         
-    
+        
+    #creates new image from transform button. Updates progress bat
+    def imgGen(self):
+        
+        w=self.imgLabel.width()
+        h=self.imgLabel.height()
+        xw=0
+        xh=0
+        area=w*h
+        a=0
+        self.img2=self.img.copy(0,0,w,h)
+        self.progress.setValue(a)
+        while(xh<h):
+            
+            xw=0
+            while(xw<w):
+                print(f" {a}/{area} ")
+                
+                c=self.img.pixelColor(xw,xh)
+                newc=self.colMaker(c)   
+                self.img2.setPixelColor(xw,xh,newc)
+                xw+=1
+                a+=1
+                self.progress.setValue(int((a/area)*100))
+            xh+=1
+            
+        self.pixmap2=QPixmap()
+        self.pixmap2.convertFromImage(self.img2)
+        self.imgLabel2.setPixmap(self.pixmap2)
+        self.imgLabel2.setScaledContents(True)
+        
+        
+    #given a QColor, returns newcolor based on Original Color - diff.
+    def colMaker(self,imgc):
+        irgb=imgc.getRgb()
+        
+        newc=QColor()
+        newdiff=(irgb[0] - self.diff[0]),(irgb[1] - self.diff[1]),(irgb[2] - self.diff[2])
+        
+        #handles behavior when values fall outside the range of 0->255
+        match [newdiff[0]<0, newdiff[0]>255]:
+            case [False,True]:
+                d0=255
+            case [True,False]:
+                d0=0
+            case _:
+                d0=newdiff[0]
+        match [newdiff[1]<0, newdiff[1]>255]:
+            case [False,True]:
+                d1=255
+            case [True,False]:
+                d1=0
+            case _:
+                d1=newdiff[1]
+        match [newdiff[2]<0, newdiff[2]>255]:
+            case [False,True]:
+                d2=255
+            case [True,False]:
+                d2=0
+            case _:
+                d2=newdiff[2]                
+        fixeddiff=(d0,d1,d2)
+            
+        return newc.fromRgb(fixeddiff[0],fixeddiff[1],fixeddiff[2])    
+        
+            
+            
+     #handles behavior for clicking Image and Color Wheel
+        
     def mousePressEvent(self, m):
+        
+       
+        
+        #mouse position relative to image/wheel coordinates
         p=self.C.pos()
-        shiftedp=p-( QPoint(self.img.x(),self.img.y()))
+        shiftedp=p-( QPoint(self.imgLabel.x(),self.imgLabel.y()))
         wheelp=p-(QPoint(self.ccd.x(),self.ccd.y()))
 
         if m.button() == Qt.LeftButton:
-            # handle the left-button press in here
-        
-            self.imgc=self.i.pixelColor(shiftedp)
+            
+            #hcolor = string version of rgb values of a QColor (imgc)
+            
+            self.imgc=self.img.pixelColor(shiftedp)
             hcolor=self.Hcolor(self.imgc)
-            self.label_1.setText(f"color {self.imgc.getRgb()}  global x: {p.x()} img x: {shiftedp.x()} global y: {p.y()} img y : {shiftedp.y()}")
+            self.promptLabel.setText(f"color {self.imgc.getRgb()}  global x: {p.x()} img x: {shiftedp.x()} global y: {p.y()} img y : {shiftedp.y()}")
             print(f"color {self.imgc.getRgb()}  global x: {p.x()} img x: {shiftedp.x()} global y: {p.y()} img y : {shiftedp.y()}")
-            self.label_2.setStyleSheet(f"background-color: {hcolor}; color: #000000;")
-            self.label_2.setText(f"{self.imgc.getRgb()}")
+            self.sampleLabel.setStyleSheet(f"background-color: {hcolor}; color: #000000;")
+            self.sampleLabel.setText(f"{self.imgc.getRgb()}")
             print(hcolor)
             
+            #Takes the color from the image and applies diff to get a new color.
+            newc=self.colMaker(self.imgc)
             
+            self.differenceLabel.setText(f"{self.diff}")
             
-            irgb=self.imgc.getRgb()
-            self.label_4.setText(f"{self.diff}")
-            newc=QColor()
-            newdiff=(irgb[0] - self.diff[0]),(irgb[1] - self.diff[1]),(irgb[2] - self.diff[2])
-            match [newdiff[0]<0, newdiff[0]>255]:
-                case [False,True]:
-                    d0=255
-                case [True,False]:
-                    d0=0
-                case _:
-                    d0=newdiff[0]
-            match [newdiff[1]<0, newdiff[1]>255]:
-                case [False,True]:
-                    d1=255
-                case [True,False]:
-                    d1=0
-                case _:
-                    d1=newdiff[1]
-            match [newdiff[2]<0, newdiff[2]>255]:
-                case [False,True]:
-                    d2=255
-                case [True,False]:
-                    d2=0
-                case _:
-                    d2=newdiff[2]                
-            fixeddiff=(d0,d1,d2)
-            
-            newc=newc.fromRgb(fixeddiff[0],fixeddiff[1],fixeddiff[2])
-        
+            #Changes text to black or white depending on background
             if(newc.value()<0.5):
                 tcolor="#ffffff"
             else:
                 tcolor="#000000"
-            self.label_5.setText(f"{newc.getRgb()}")  
-            self.label_5.setStyleSheet(f"background-color: {self.Hcolor(newc)}; color: {tcolor};")
+            self.colorLabel.setText(f"{newc.getRgb()}")  
+            self.colorLabel.setStyleSheet(f"background-color: {self.Hcolor(newc)}; color: {tcolor};")
                
-        else:
-            self.label_1.setText("out of bounds")
-            print("out of bounds")
+
             
        
 
             
     def Import(self):
-        """
-        Handle HW event
-        TODO: Implement your logic here
-        """
+   
+        #imports local image file into program and places the image inside the image label.
+        #Warning: Will not respect aspect ratio.
+        
+        
         
         self.pixmap = QPixmap(self.img_input.text())
-        w=self.img.width()
-        h=self.img.height()
+        w=self.imgLabel.width()
+        h=self.imgLabel.height()
         s=QSize(w,h)
         self.pixmap=self.pixmap.scaled(s)
-        self.img.setPixmap(self.pixmap)
-        self.img.setScaledContents(True)
-        #ww=self.img.width
-        #self.setCentralWidget(label)
-        self.i=self.pixmap.toImage()
+        self.imgLabel.setPixmap(self.pixmap)
+        self.imgLabel.setScaledContents(True)
+        self.img=self.pixmap.toImage()
 
         
         
@@ -218,9 +301,7 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = App()
     window.show()
-    a=0xffffff
-    b=0x3b82f6
-    print(a-b)
+
     
     
     sys.exit(app.exec_())
